@@ -1,7 +1,7 @@
 import requests
 import os
 from datetime import datetime
-from zoneinfo import ZoneInfo # 파이썬 3.9 이상 기본 모듈
+from zoneinfo import ZoneInfo
 
 URL = "https://api.mixtape.so/albums/earliest-release"
 
@@ -87,4 +87,13 @@ def main():
             if last_sent != unique_key:
                 send_silent(f"현재 발매일: {current}")
                 # 보낸 기록 저장
-                with open("last_
+                with open("last_silent.txt", "w", encoding="utf-8") as f:
+                    f.write(unique_key)
+            break # 조건에 맞으면 더 이상 반복할 필요 없음
+
+    # 현재 값을 이전 값으로 저장
+    with open("prev.txt", "w", encoding="utf-8") as f:
+        f.write(current)
+
+if __name__ == "__main__":
+    main()
