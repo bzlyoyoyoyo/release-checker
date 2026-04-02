@@ -9,19 +9,18 @@ TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 def send(msg):
-    # 강한 알림
     try:
-        requests.post(
+        res = requests.post(
             f"https://api.telegram.org/bot{TOKEN}/sendMessage",
             data={"chat_id": CHAT_ID, "text": msg}
         )
+        print("텔레그램 응답:", res.status_code, res.text)
     except Exception as e:
         print(f"텔레그램 전송 실패: {e}")
 
 def send_silent(msg):
-    # 무음 알림
     try:
-        requests.post(
+        res = requests.post(
             f"https://api.telegram.org/bot{TOKEN}/sendMessage",
             data={
                 "chat_id": CHAT_ID,
@@ -29,13 +28,16 @@ def send_silent(msg):
                 "disable_notification": True
             }
         )
+        print("텔레그램 응답:", res.status_code, res.text)
     except Exception as e:
         print(f"텔레그램 전송 실패: {e}")
 
 def main():
-    # 🛡️ 서버 차단 방지용: 가짜 크롬 브라우저 신분증(User-Agent) 장착
+    # 🔥 무조건 테스트 메시지 보내기 (이게 핵심)
+    send("🔥 테스트 메시지")
+
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0"
     }
 
     try:
@@ -44,54 +46,44 @@ def main():
         data = res.json()
         current = data["contents"]["data"]["earliest_release_at"]
     except Exception as e:
-        # 🚨 차단 당하거나 서버 에러 시 텔레그램으로 즉각 구조 요청
-        error_msg = f"⚠️ [머무르 봇] 서버 접속 실패 또는 차단 가능성 발생!\n에러 내용: {e}"
+        error_msg = f"⚠️ 서버 에러: {e}"
         print(error_msg)
-        send(error_msg) # 강한 알림 전송
-        return # 파일 덮어쓰기 방지를 위해 여기서 즉시 종료
+        send(error_msg)
+        return
 
-    # 한국 시간(KST)으로 현재 시간 가져오기
     now = datetime.now(ZoneInfo("Asia/Seoul"))
     hour = now.hour
     minute = now.minute
 
-    # 이전 값 불러오기
     try:
         with open("prev.txt", "r", encoding="utf-8") as f:
             prev = f.read().strip()
     except FileNotFoundError:
         prev = None
 
-    # 마지막 무음 알림 기록 불러오기
     try:
         with open("last_silent.txt", "r", encoding="utf-8") as f:
             last_sent = f.read().strip()
     except FileNotFoundError:
         last_sent = ""
 
-    print(f"현재 KST 시간: {now.strftime('%Y-%m-%d %H:%M:%S')} | 데이터: {current}")
+    print(f"현재 시간: {now} | 데이터: {current}")
 
-    # 1️⃣ 변경 시 강한 알림 (최초 실행 시 prev가 None이므로 알림 안 감)
     if prev is not None and current != prev:
-        send(f"🔥 발매 가능일 변경: {current}")
+        send(f"🔥 변경됨: {current}")
 
-    # 2️⃣ 06:15 / 12:15 / 18:15 / 00:15 무음 알림
-    target_times = [6, 12, 18, 0]
+    target_times = [0, 6, 12, 18]
 
     for h in target_times:
-        # 깃허브 액션 지연을 고려해 15분 ~ 55분 사이에 실행되면 알림 발송
-        if hour == h and 15 <= minute < 55:  
-            unique_key = now.strftime("%Y-%m-%d") + f"_{h}_15"
-            
-            # 오늘 해당 시간대의 알림을 아직 안 보냈다면
-            if last_sent != unique_key:
-                send_silent(f"현재 발매일: {current}")
-                # 보낸 기록 저장
-                with open("last_silent.txt", "w", encoding="utf-8") as f:
-                    f.write(unique_key)
-            break # 조건에 맞으면 더 이상 반복할 필요 없음
+        if hour == h and 0 <= minute < 20:
+            key = now.strftime("%Y-%m-%d") + f"_{h}"
 
-    # 현재 값을 이전 값으로 저장
+            if last_sent != key:
+                send_silent(f"현재 발매일: {current}")
+                with open("last_silent.txt", "w", encoding="utf-8") as f:
+                    f.write(key)
+            break
+
     with open("prev.txt", "w", encoding="utf-8") as f:
         f.write(current)
 
