@@ -33,14 +33,22 @@ def send_silent(msg):
         print(f"텔레그램 전송 실패: {e}")
 
 def main():
+    # 🛡️ 서버 차단 방지용: 가짜 크롬 브라우저 신분증(User-Agent) 장착
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+
     try:
-        res = requests.get(URL, timeout=10)
+        res = requests.get(URL, headers=headers, timeout=10)
         res.raise_for_status()
         data = res.json()
         current = data["contents"]["data"]["earliest_release_at"]
     except Exception as e:
-        print(f"API 호출 실패: {e}")
-        return # API 에러 시 여기서 중단하여 파일 덮어쓰기 방지
+        # 🚨 차단 당하거나 서버 에러 시 텔레그램으로 즉각 구조 요청
+        error_msg = f"⚠️ [머무르 봇] 서버 접속 실패 또는 차단 가능성 발생!\n에러 내용: {e}"
+        print(error_msg)
+        send(error_msg) # 강한 알림 전송
+        return # 파일 덮어쓰기 방지를 위해 여기서 즉시 종료
 
     # 한국 시간(KST)으로 현재 시간 가져오기
     now = datetime.now(ZoneInfo("Asia/Seoul"))
@@ -79,13 +87,4 @@ def main():
             if last_sent != unique_key:
                 send_silent(f"현재 발매일: {current}")
                 # 보낸 기록 저장
-                with open("last_silent.txt", "w", encoding="utf-8") as f:
-                    f.write(unique_key)
-            break # 조건에 맞으면 더 이상 반복할 필요 없음
-
-    # 현재 값을 이전 값으로 저장
-    with open("prev.txt", "w", encoding="utf-8") as f:
-        f.write(current)
-
-if __name__ == "__main__":
-    main()
+                with open("last_
