@@ -18,19 +18,10 @@ def main():
 
     current = data["contents"]["data"]["earliest_release_at"]
 
-    try:
-        with open("prev.txt", "r") as f:
-            prev = f.read().strip()
-    except:
-        prev = None
-
     print("현재:", current)
 
-    if prev and current != prev:
-        send(f"🔥 발매 가능일 변경: {current}")
-
-    with open("prev.txt", "w") as f:
-        f.write(current)
+    # 테스트용 (무조건 전송)
+    send(f"테스트 알림: {current}")
 
 if __name__ == "__main__":
     main()
