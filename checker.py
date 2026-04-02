@@ -31,7 +31,8 @@ def main():
     current = data["contents"]["data"]["earliest_release_at"]
 
     now = datetime.now()
-    current_hour = now.hour
+    hour = now.hour
+    minute = now.minute
 
     # 이전 값
     try:
@@ -40,7 +41,7 @@ def main():
     except:
         prev = None
 
-    # 마지막 무음 알림 시간 (중복 방지용)
+    # 마지막 무음 알림 기록
     try:
         with open("last_silent.txt", "r") as f:
             last_sent = f.read().strip()
@@ -53,15 +54,19 @@ def main():
     if prev and current != prev:
         send(f"🔥 발매 가능일 변경: {current}")
 
-    # 2️⃣ 특정 시간 무음 알림
-    target_hours = [6, 12, 18, 0]
+    # 2️⃣ 6:15 / 12:15 / 18:15 / 00:15 무음 알림
+    target_times = [(6,15), (12,15), (18,15), (0,15)]
 
-    today_key = now.strftime("%Y-%m-%d") + f"_{current_hour}"
+    time_key = now.strftime("%Y-%m-%d_%H_%M")
 
-    if current_hour in target_hours and last_sent != today_key:
-        send_silent(f"현재 발매일: {current}")
-        with open("last_silent.txt", "w") as f:
-            f.write(today_key)
+    for h, m in target_times:
+        if hour == h and minute < 20:  # 15분 기준, 약간 여유
+            unique_key = now.strftime("%Y-%m-%d") + f"_{h}_{m}"
+            if last_sent != unique_key:
+                send_silent(f"현재 발매일: {current}")
+                with open("last_silent.txt", "w") as f:
+                    f.write(unique_key)
+            break
 
     # 값 저장
     with open("prev.txt", "w") as f:
