@@ -33,9 +33,6 @@ def send_silent(msg):
         print(f"텔레그램 전송 실패: {e}")
 
 def main():
-    # 🔥 무조건 테스트 메시지 보내기 (이게 핵심)
-    send("🔥 테스트 메시지")
-
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
@@ -46,7 +43,7 @@ def main():
         data = res.json()
         current = data["contents"]["data"]["earliest_release_at"]
     except Exception as e:
-        error_msg = f"⚠️ 서버 에러: {e}"
+        error_msg = f"⚠️ [머무르 봇] 서버 에러 발생\n{e}"
         print(error_msg)
         send(error_msg)
         return
@@ -55,12 +52,14 @@ def main():
     hour = now.hour
     minute = now.minute
 
+    # 이전 값
     try:
         with open("prev.txt", "r", encoding="utf-8") as f:
             prev = f.read().strip()
     except FileNotFoundError:
         prev = None
 
+    # 마지막 무음 알림 기록
     try:
         with open("last_silent.txt", "r", encoding="utf-8") as f:
             last_sent = f.read().strip()
@@ -69,21 +68,20 @@ def main():
 
     print(f"현재 시간: {now} | 데이터: {current}")
 
+    # 🔥 변경 감지
     if prev is not None and current != prev:
-        send(f"🔥 변경됨: {current}")
+        send(f"🔥 발매 가능일 변경: {current}")
 
-    target_times = [0, 6, 12, 18]
+    # 🔕 0 / 6 / 12 / 18 시 무음 알림
+    if hour % 6 == 0 and 0 <= minute < 20:
+        key = now.strftime("%Y-%m-%d") + f"_{hour}"
 
-    for h in target_times:
-        if hour == h and 0 <= minute < 20:
-            key = now.strftime("%Y-%m-%d") + f"_{h}"
+        if last_sent != key:
+            send_silent(f"현재 발매일: {current}")
+            with open("last_silent.txt", "w", encoding="utf-8") as f:
+                f.write(key)
 
-            if last_sent != key:
-                send_silent(f"현재 발매일: {current}")
-                with open("last_silent.txt", "w", encoding="utf-8") as f:
-                    f.write(key)
-            break
-
+    # 현재 값 저장
     with open("prev.txt", "w", encoding="utf-8") as f:
         f.write(current)
 
