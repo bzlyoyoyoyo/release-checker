@@ -43,7 +43,7 @@ def main():
         data = res.json()
         current = data["contents"]["data"]["earliest_release_at"]
     except Exception as e:
-        error_msg = f"⚠️ [머무르 봇] 서버 에러 발생\n{e}"
+        error_msg = f"⚠️ 서버 에러 발생\n{e}"
         print(error_msg)
         send(error_msg)
         return
@@ -68,16 +68,23 @@ def main():
 
     print(f"현재 시간: {now} | 데이터: {current}")
 
-    # 🔥 변경 감지
+    # 🔥 변경 감지 → 공지 스타일
     if prev is not None and current != prev:
-        send(f"🔥 발매 가능일 변경: {current}")
+        message = f"""🚨🚨🚨 발매 일정 변경 감지 🚨🚨🚨
 
-    # 🔕 0 / 6 / 12 / 18 시 무음 알림
-    if hour % 6 == 0 and 0 <= minute < 20:
-        key = now.strftime("%Y-%m-%d") + f"_{hour}"
+📢 새로운 발매 가능일
+👉 {current}
+
+⚡ 즉시 확인 필요
+"""
+        send(message)
+
+    # 🔕 1시간마다 무음 알림
+    if 0 <= minute < 10:
+        key = now.strftime("%Y-%m-%d_%H")
 
         if last_sent != key:
-            send_silent(f"현재 발매일: {current}")
+            send_silent(f"[자동체크] 현재 발매일: {current}")
             with open("last_silent.txt", "w", encoding="utf-8") as f:
                 f.write(key)
 
