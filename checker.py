@@ -49,17 +49,16 @@ def main():
         return
 
     now = datetime.now(ZoneInfo("Asia/Seoul"))
-    hour = now.hour
-    minute = now.minute
+    current_hour = now.strftime("%Y-%m-%d_%H")
 
-    # 이전 값
+    # 이전 발매일
     try:
         with open("prev.txt", "r", encoding="utf-8") as f:
             prev = f.read().strip()
     except FileNotFoundError:
         prev = None
 
-    # 마지막 무음 알림 기록
+    # 마지막 무음 알림 시간
     try:
         with open("last_silent.txt", "r", encoding="utf-8") as f:
             last_sent = f.read().strip()
@@ -68,7 +67,7 @@ def main():
 
     print(f"현재 시간: {now} | 데이터: {current}")
 
-    # 🔥 변경 감지 → 공지 스타일
+    # 🔥 변경 감지 (강한 알림)
     if prev is not None and current != prev:
         message = f"""🚨🚨🚨 발매 일정 변경 감지 🚨🚨🚨
 
@@ -79,14 +78,11 @@ def main():
 """
         send(message)
 
-    # 🔕 1시간마다 무음 알림
-    if 0 <= minute < 10:
-        key = now.strftime("%Y-%m-%d_%H")
-
-        if last_sent != key:
-            send_silent(f"[자동체크] 현재 발매일: {current}")
-            with open("last_silent.txt", "w", encoding="utf-8") as f:
-                f.write(key)
+    # 🔕 시간당 1회 강제 발송 (핵심)
+    if last_sent != current_hour:
+        send_silent(f"[자동체크] 현재 발매일: {current}")
+        with open("last_silent.txt", "w", encoding="utf-8") as f:
+            f.write(current_hour)
 
     # 현재 값 저장
     with open("prev.txt", "w", encoding="utf-8") as f:
